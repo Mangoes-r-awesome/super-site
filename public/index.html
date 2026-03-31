@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Super — Premium short-term rental management across Australia.">
+<title>super — Premium Short-Term Rental Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Hostaway Search Widget -->
+<script src="https://d2q3n06xhbi0am.cloudfront.net/widget.js?1640277196"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (window.searchBar) {
+        window.searchBar({
+          baseUrl: 'https://book.superhostly.com.au/',
+          showLocation: true,
+          color: '#E8593C',
+          rounded: true,
+          openInNewTab: false,
+          font: 'Plus Jakarta Sans',
+        });
+      }
+    }, 1000);
+  });
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── ANIMATED COUNTER ───
+function Counter({ end, suffix = "", duration = 1000 }) {
+  const [val, setVal] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !started.current) {
+        started.current = true;
+        const num = parseFloat(end);
+        const steps = 60;
+        const inc = num / steps;
+        let cur = 0;
+        const iv = setInterval(() => {
+          cur += inc;
+          if (cur >= num) { setVal(num); clearInterval(iv); }
+          else setVal(Math.round(cur * 10) / 10);
+        }, duration / steps);
+      }
+    }, { threshold: 0.3 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [end, duration]);
+  const display = Number.isInteger(parseFloat(end)) ? Math.round(val).toLocaleString() : val.toFixed(1);
+  return <span ref={ref}>{display}{suffix}</span>;
+}
+
+export default function App() {
+  const [page, setPage] = useState("home");
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileNav, setMobileNav] = useState(false);
+  const [fading, setFading] = useState(false);
+
+  const go = useCallback((p) => {
+    if (p === page) return;
+    setMobileNav(false);
+    setFading(true);
+    setTimeout(() => {
+      setPage(p);
+      window.scrollTo({ top: 0 });
+      setTimeout(() => setFading(false), 30);
+    }, 250);
+  }, [page]);
+  const isHome = page === "home";
+  const navLight = isHome && !scrolled;
+
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", h);
+    return () => window.removeEventListener("scroll", h);
+  }, []);
+
+  // ─── STYLES ───
+  const S = {
+    sans: "'Plus Jakarta Sans',-apple-system,sans-serif",
+    serif: "'Lora',Georgia,serif",
+    dark: "#1A1A18", cream: "#FAF8F5", coral: "#E8593C", amber: "#F2A623",
+    grey: "#3D3D3A", gold: "#C4B99A", sage: "#4A6B4A",
+    tsec: "#6B6860", tmut: "#9E998C", bdr: "#E5E1D8",
+  };
+
+  // ─── COMPONENTS ───
+  const Ph = ({ t, dark }) => (
+    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, letterSpacing: 1, color: dark ? "rgba(196,185,154,.35)" : S.tmut, background: dark ? "linear-gradient(145deg,#2e2e2a,#1a1a18)" : "linear-gradient(135deg,#ede9e0,#ddd8cc)" }}>{t}</div>
+  );
+  const Ey = ({ children, c }) => <span style={{ fontFamily: S.sans, fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", color: c || S.coral, display: "block" }}>{children}</span>;
+  const Btn = ({ children, v, onClick, style: sx }) => {
+    const vs = { cream: { background: S.cream, color: S.dark }, coral: { background: S.coral, color: "#fff" }, dark: { background: S.dark, color: S.cream }, outline: { border: `1.5px solid ${S.gold}`, color: S.cream, background: "none" }, outDark: { border: `1.5px solid ${S.bdr}`, color: S.dark, background: "none" } };
+    return <a onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 28px", borderRadius: 8, fontSize: 14, fontWeight: 700, letterSpacing: .3, cursor: "pointer", border: "none", transition: "all .25s", ...(vs[v] || {}), ...sx }}>{children} →</a>;
+  };
+  const Wrap = ({ children, style: sx }) => <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 20px", ...sx }}>{children}</div>;
+  const Sec = ({ children, bg, style: sx }) => <section style={{ padding: "72px 0", background: bg || "transparent", ...sx }}><Wrap>{children}</Wrap></section>;
+
+  const Card = ({ loc, name, meta }) => (
+    <div style={{ borderRadius: 12, overflow: "hidden", background: "#fff", border: `1px solid ${S.bdr}`, cursor: "pointer" }}>
+      <div style={{ height: 220, overflow: "hidden" }}><Ph t={name} /></div>
+      <div style={{ padding: "18px 20px" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: S.coral, marginBottom: 3 }}>{loc}</div>
+        <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 5, letterSpacing: -.3 }}>{name}</div>
+        <div style={{ fontSize: 13, color: S.tmut, display: "flex", gap: 12 }}>{meta}</div>
+      </div>
+    </div>
+  );
+
+  const SrvCard = ({ icon, title, desc }) => (
+    <div style={{ padding: "24px 20px", borderRadius: 12, border: `1px solid ${S.bdr}`, background: "#fff" }}>
+      <div style={{ fontSize: 22, marginBottom: 10 }}>{icon}</div>
+      <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 5 }}>{title}</h4>
+      <p style={{ fontSize: 13, color: S.tsec, lineHeight: 1.6 }}>{desc}</p>
+    </div>
+  );
+
+  // ─── NAV ───
+  const Nav = () => (
+    <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: navLight ? "14px 0" : "10px 0", background: navLight ? "transparent" : "rgba(250,248,245,0.95)", backdropFilter: navLight ? "none" : "blur(20px)", WebkitBackdropFilter: navLight ? "none" : "blur(20px)", borderBottom: navLight ? "none" : `1px solid ${S.bdr}`, transition: "all .3s" }}>
+      <Wrap style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <a onClick={() => go("home")} style={{ fontSize: 24, fontWeight: 800, letterSpacing: -.5, color: navLight ? S.cream : S.dark, cursor: "pointer" }}>super</a>
+        {/* Desktop */}
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }} className="desk-nav">
+          {[["homes", "Our Homes"], ["about", "About"], ["invest", "Invest"], ["partners", "Work With Us"]].map(([k, l]) => (
+            <a key={k} onClick={() => go(k)} style={{ fontSize: 13, fontWeight: 500, color: navLight ? "rgba(250,248,245,.7)" : S.tsec, cursor: "pointer" }}>{l}</a>
+          ))}
+          <a onClick={() => go("homes")} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", background: navLight ? "rgba(250,248,245,.12)" : S.dark, color: S.cream, border: navLight ? "1px solid rgba(250,248,245,.2)" : "none" }}>Book a Stay</a>
+        </div>
+        {/* Mobile hamburger */}
+        <div onClick={() => setMobileNav(!mobileNav)} style={{ display: "none", flexDirection: "column", gap: 5, cursor: "pointer" }} className="mob-toggle">
+          <span style={{ width: 22, height: 1.5, background: navLight ? S.cream : S.dark, transition: "all .3s" }} />
+          <span style={{ width: 22, height: 1.5, background: navLight ? S.cream : S.dark, transition: "all .3s" }} />
+          <span style={{ width: 16, height: 1.5, background: navLight ? S.cream : S.dark, transition: "all .3s" }} />
+        </div>
+      </Wrap>
+      {/* Mobile menu */}
+      <div style={{ maxHeight: mobileNav ? 300 : 0, overflow: "hidden", transition: "max-height .35s ease, opacity .3s ease", opacity: mobileNav ? 1 : 0, background: S.cream, borderTop: mobileNav ? `1px solid ${S.bdr}` : "none" }}>
+        <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+          {[["homes", "Our Homes"], ["about", "About"], ["invest", "Invest"], ["partners", "Work With Us"]].map(([k, l]) => (
+            <a key={k} onClick={() => go(k)} style={{ fontSize: 16, fontWeight: 600, color: S.dark, cursor: "pointer" }}>{l}</a>
+          ))}
+          <a onClick={() => go("homes")} style={{ padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700, background: S.dark, color: S.cream, textAlign: "center", cursor: "pointer" }}>Book a Stay</a>
+        </div>
+      </div>
+    </nav>
+  );
+
+  const Footer = () => (
+    <footer style={{ background: S.dark, color: S.gold, padding: "48px 0 28px" }}>
+      <Wrap>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 32, marginBottom: 32 }}>
+          <div style={{ maxWidth: 260 }}><span style={{ fontSize: 22, fontWeight: 800, color: S.cream, display: "block", marginBottom: 8 }}>super</span><p style={{ fontSize: 13, lineHeight: 1.7, color: "rgba(196,185,154,.55)" }}>Premium short-term rental management across Australia.</p></div>
+          <div><p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(196,185,154,.4)", marginBottom: 12 }}>Company</p>{[["about", "About"], ["invest", "Invest"], ["partners", "Work With Us"]].map(([k, l]) => <a key={k} onClick={() => go(k)} style={{ display: "block", fontSize: 13, color: S.gold, cursor: "pointer", marginBottom: 8 }}>{l}</a>)}</div>
+          <div><p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(196,185,154,.4)", marginBottom: 12 }}>Stays</p>{["All Homes", "Central Coast", "Sydney", "Melbourne"].map(l => <span key={l} style={{ display: "block", fontSize: 13, color: S.gold, marginBottom: 8, cursor: l === "All Homes" ? "pointer" : "default" }} onClick={l === "All Homes" ? () => go("homes") : undefined}>{l}</span>)}</div>
+          <div><p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "rgba(196,185,154,.4)", marginBottom: 12 }}>Contact</p><span style={{ display: "block", fontSize: 13, color: S.gold, marginBottom: 8 }}>hello@superhostly.com.au</span><span style={{ display: "block", fontSize: 13, color: S.gold }}>0452 443 870</span></div>
+        </div>
+        <div style={{ borderTop: "1px solid rgba(250,248,245,.06)", paddingTop: 16, display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(196,185,154,.35)", flexWrap: "wrap", gap: 8 }}>
+          <span>© 2026 Super. All rights reserved.</span><span>ABN 33 667 967 348</span>
+        </div>
+      </Wrap>
+    </footer>
+  );
+
+  const InnerHero = ({ eyebrow, title, desc, eyeC }) => (
+    <div style={{ padding: "130px 0 56px", background: S.dark }}><Wrap><Ey c={eyeC || S.gold}>{eyebrow}</Ey><h1 style={{ fontWeight: 800, fontSize: "clamp(28px,5vw,52px)", letterSpacing: "-.03em", color: S.cream, marginTop: 8, lineHeight: 1.1 }}>{title}</h1>{desc && <p style={{ color: S.gold, opacity: .8, fontSize: 16, lineHeight: 1.75, maxWidth: 520, marginTop: 14 }}>{desc}</p>}</Wrap></div>
+  );
+
+  // ═══════════ PAGES ═══════════
+
+  const Home = () => (<>
+    {/* HERO - text on top, images below */}
+    <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden", background: S.dark }}>
+      <div style={{ position: "absolute", inset: 0 }}>
+        <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", filter: "blur(120px)", opacity: .1, background: S.coral, top: "-8%", left: "-3%" }} />
+        <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", filter: "blur(120px)", opacity: .1, background: S.amber, bottom: "-10%", right: "-3%" }} />
+        <div style={{ position: "absolute", width: 250, height: 250, borderRadius: "50%", filter: "blur(100px)", opacity: .05, background: S.sage, top: "50%", right: "25%" }} />
+      </div>
+      <Wrap style={{ position: "relative", zIndex: 2, paddingTop: 120, paddingBottom: 60 }}>
+        <div style={{ maxWidth: 620, marginBottom: 40 }}>
+          <Ey c={S.gold}>Premium Short-Term Rentals</Ey>
+          <h1 style={{ fontWeight: 800, fontSize: "clamp(36px,6vw,68px)", lineHeight: 1.08, letterSpacing: "-.03em", color: S.cream, margin: "14px 0 18px" }}>Spaces designed for <span style={{ fontFamily: S.serif, fontStyle: "italic", fontWeight: 400, color: S.gold }}>how you actually live</span></h1>
+          <p style={{ color: S.gold, fontSize: 16, lineHeight: 1.75, maxWidth: 440, marginBottom: 28, opacity: .85 }}>Hand-picked homes across Australia. Managed end-to-end by people who care about every detail.</p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Btn v="cream" onClick={() => go("homes")}>Browse our homes</Btn>
+            <Btn v="outline" onClick={() => go("about")}>Our story</Btn>
+          </div>
+        </div>
+        {/* Image grid below text */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, height: "clamp(180px,25vw,320px)" }}>
+          <div style={{ borderRadius: 10, overflow: "hidden" }}><img src="/img/arroya-pool-house.jpg" alt="Arroya Valley" style={{width:"100%",height:"100%",objectFit:"cover"}} /></div>
+          <div style={{ borderRadius: 10, overflow: "hidden" }}><img src="/img/arroya-living.jpg" alt="Living room" style={{width:"100%",height:"100%",objectFit:"cover"}} /></div>
+          <div style={{ borderRadius: 10, overflow: "hidden" }}><img src="/img/arroya-pool-wide.jpg" alt="Pool" style={{width:"100%",height:"100%",objectFit:"cover"}} /></div>
+        </div>
+      </Wrap>
+    </section>
+
+    {/* STATS with animated counters */}
+    <div style={{ background: S.cream, padding: "40px 0", borderBottom: `1px solid ${S.bdr}` }}>
+      <Wrap>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 24, textAlign: "center" }}>
+          {[["20000", "+", "Guests hosted"], ["5", "", "Cities across Australia"], ["4.8", "", "Average guest rating"], ["24/7", "", "Guest experience team"]].map(([n, suf, l]) => (
+            <div key={l}>
+              <div style={{ fontSize: "clamp(32px,4vw,42px)", fontWeight: 800, color: S.dark, letterSpacing: -2 }}>
+                {n === "24/7" ? "24/7" : <Counter end={n} suffix={suf} />}
+              </div>
+              <div style={{ fontSize: 12, color: S.tmut, marginTop: 2, fontWeight: 500 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </Wrap>
+    </div>
+
+    {/* Press */}
+    <div style={{ background: "#fff", padding: "28px 0", borderBottom: `1px solid ${S.bdr}` }}>
+      <Wrap style={{ textAlign: "center" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase", color: S.tmut, marginBottom: 14 }}>Our homes have been featured in</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(24px,4vw,40px)", flexWrap: "wrap", opacity: .4 }}>
+          <span style={{ fontFamily: S.serif, fontStyle: "italic", fontSize: 22, fontWeight: 500, letterSpacing: 1 }}>VOGUE</span>
+          <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: 3 }}>GQ</span>
+          <span style={{ fontFamily: S.serif, fontSize: 24, fontWeight: 500, letterSpacing: 2 }}>AFR</span>
+        </div>
+      </Wrap>
+    </div>
+
+    {/* Editorial */}
+    <Sec bg="#fff" style={{ padding: "48px 0" }}>
+      <p style={{ fontFamily: S.serif, fontStyle: "italic", fontSize: "clamp(18px,2.5vw,28px)", lineHeight: 1.55, color: S.dark, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>Most people sleep. They don't truly rest. Most people scroll. They don't truly connect.</p>
+    </Sec>
+
+    {/* Search */}
+    <Sec bg={S.cream}>
+      <div style={{ maxWidth: 560, margin: "0 auto 28px", textAlign: "center" }}><Ey>Find Your Stay</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>Where are you headed?</h2></div>
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: "clamp(16px,3vw,28px)", background: "#fff", borderRadius: 12, border: `1px solid ${S.bdr}`, boxShadow: "0 4px 16px rgba(0,0,0,.03)" }}>
+        <div style={{ padding: "20px 0", border: `2px dashed ${S.bdr}`, borderRadius: 8, color: S.tmut, fontSize: 13, textAlign: "center" }}>Hostaway search widget<br /><span style={{ fontSize: 11 }}>Location + dates → book.superhostly.com.au</span></div>
+      </div>
+    </Sec>
+
+    {/* Featured homes */}
+    <Sec bg="#fff">
+      <div style={{ maxWidth: 560, marginBottom: 40 }}><Ey>Featured Homes</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8, marginBottom: 8 }}>Homes with soul</h2><p style={{ color: S.tsec, fontSize: 15, lineHeight: 1.7 }}>No cookie-cutter listings. Each property selected for character and experience.</p></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18 }}>
+        <Card loc="Central Coast · Ravensdale" name="Arroya Valley Farmstay" meta={<><span>5 bed</span><span>3 bath</span><span>10 acres</span></>} />
+        <Card loc="Sydney" name="Harbour Terrace" meta={<><span>3 bed</span><span>2 bath</span><span>City views</span></>} />
+        <Card loc="Gold Coast" name="Broadbeach Suite" meta={<><span>2 bed</span><span>1 bath</span><span>Ocean view</span></>} />
+      </div>
+      <div style={{ textAlign: "center", marginTop: 36 }}><Btn v="dark" onClick={() => go("homes")}>View all homes</Btn></div>
+    </Sec>
+
+    {/* Services */}
+    <Sec bg={S.cream}>
+      <div style={{ maxWidth: 560, margin: "0 auto 40px", textAlign: "center" }}><Ey>Beyond the Stay</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>Everything handled</h2></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
+        <SrvCard icon="🔑" title="Concierge" desc="Airport transfers, restaurant bookings, local guides." />
+        <SrvCard icon="🧹" title="White-glove cleaning" desc="Hotel-standard inspections between every stay." />
+        <SrvCard icon="🛠️" title="24/7 maintenance" desc="On-call team around the clock." />
+        <SrvCard icon="📦" title="Stocked essentials" desc="Quality linen, toiletries, kitchen basics, welcome packs." />
+        <SrvCard icon="🏊" title="Experience packages" desc="Surf lessons, wine tours, private chefs." />
+        <SrvCard icon="🐕" title="Pet-friendly stays" desc="Selected homes welcome pets. Treats waiting." />
+      </div>
+    </Sec>
+
+    {/* Loyalty - tiered progression */}
+    <Sec bg="#fff">
+      <div style={{ maxWidth: 560, margin: "0 auto 36px", textAlign: "center" }}><Ey c={S.sage}>Super Club</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>The more you stay, the more unlocks.</h2><p style={{ color: S.tsec, fontSize: 15, lineHeight: 1.7, marginTop: 8 }}>Every night you stay earns XP. As you level up, new perks unlock automatically — no cards, no points to redeem. Just stay, and the experience gets better.</p></div>
+      {/* Horizontal scrollable tier progression */}
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", margin: "0 -20px", padding: "0 20px 16px" }}>
+        <div style={{ display: "flex", gap: 0, minWidth: "min-content" }}>
+          {[
+            { n: "Explorer", c: S.gold, bg: "rgba(196,185,154,.06)", nights: "1–9 nights", xp: "1 XP / night", perks: ["Welcome pack on arrival", "Priority direct booking rates", "Access to member-only homes"] },
+            { n: "Regular", c: S.coral, bg: "rgba(232,89,60,.04)", nights: "10–29 nights", xp: "2 XP / night", perks: ["Late checkout (subject to avail.)", "Complimentary welcome hamper", "Priority support line"] },
+            { n: "Inner Circle", c: S.sage, bg: "rgba(74,107,74,.04)", nights: "30+ nights", xp: "3 XP / night", perks: ["Guaranteed late checkout", "Free experience upgrade per stay", "First access to new properties", "Annual member event invite"] },
+          ].map((t, i) => (
+            <div key={t.n} style={{ display: "flex", alignItems: "stretch" }}>
+              {/* Tier card */}
+              <div style={{ minWidth: 260, padding: "28px 24px", background: t.bg, border: `1px solid ${S.bdr}`, borderLeft: i === 0 ? `1px solid ${S.bdr}` : "none", borderRadius: i === 0 ? "14px 0 0 14px" : i === 2 ? "0 14px 14px 0" : 0, position: "relative" }}>
+                {/* Tier level indicator */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: t.c, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>{i + 1}</div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: t.c, letterSpacing: -.3 }}>{t.n}</div>
+                    <div style={{ fontSize: 11, color: S.tmut }}>{t.nights}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.c, marginBottom: 14, padding: "4px 10px", background: `${t.c}11`, borderRadius: 6, display: "inline-block" }}>{t.xp}</div>
+                <ul style={{ listStyle: "none", fontSize: 13, color: S.tsec, lineHeight: 1.9, padding: 0 }}>
+                  {t.perks.map(p => <li key={p}>+ {p}</li>)}
+                </ul>
+                {i < 2 && <div style={{ fontSize: 11, color: S.tmut, marginTop: 14, fontStyle: "italic" }}>+ everything from previous tiers</div>}
+              </div>
+              {/* Arrow connector between tiers */}
+              {i < 2 && <div style={{ display: "flex", alignItems: "center", padding: "0 2px", color: S.bdr, fontSize: 18 }}>›</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <p style={{ textAlign: "center", fontSize: 12, color: S.tmut, marginTop: 16 }}>Tiers unlock automatically based on total nights stayed across all Super properties.</p>
+    </Sec>
+
+    {/* About preview */}
+    <Sec bg={S.cream}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 48, alignItems: "center" }}>
+        <div>
+          <Ey>Our Story</Ey>
+          <h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", margin: "8px 0 14px" }}>We started with the hardest properties. On purpose.</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.75, color: S.tsec, marginBottom: 12 }}>Most STR managers start with city apartments. We started with 10-acre luxury rural estates — multi-building compounds with pools, fire pits, and 3am emergency callouts.</p>
+          <p style={{ color: S.tsec, lineHeight: 1.7, marginBottom: 24 }}>Everything else is easy after that. That's the point.</p>
+          <Btn v="dark" onClick={() => go("about")}>Read our story</Btn>
+        </div>
+        <div style={{ height: "clamp(260px,30vw,380px)", borderRadius: 12, overflow: "hidden" }}><img src="/img/team.png" alt="Super team" style={{width:"100%",height:"100%",objectFit:"cover"}} /></div>
+      </div>
+    </Sec>
+
+    {/* Owner CTA */}
+    <Sec bg={S.dark} style={{ textAlign: "center", padding: "72px 0" }}>
+      <Ey c={S.gold}>For Property Owners</Ey>
+      <h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", color: S.cream, maxWidth: 560, margin: "8px auto 14px" }}>Your home, our craft.</h2>
+      <p style={{ color: S.gold, maxWidth: 440, margin: "0 auto 24px", fontSize: 15, lineHeight: 1.7, opacity: .8 }}>Guest vetting, dynamic pricing, white-glove cleaning, and 24/7 support. You keep the keys and the returns.</p>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <Btn v="coral" onClick={() => go("partners")}>Partner with us</Btn>
+        <Btn v="outline" onClick={() => go("invest")}>Investor enquiries</Btn>
+      </div>
+    </Sec>
+  </>);
+
+  // ─── OUR HOMES ───
+  const Homes = () => (<>
+    <InnerHero eyebrow="Our Portfolio" title="Find your next stay" desc="From coastal farmstays to city apartments — every home hand-picked for character, comfort, and location." />
+    <Sec bg={S.cream}>
+      <div style={{ maxWidth: 780, margin: "0 auto 40px", padding: "clamp(16px,3vw,28px)", background: "#fff", borderRadius: 12, border: `1px solid ${S.bdr}` }}><div style={{ padding: "20px 0", border: `2px dashed ${S.bdr}`, borderRadius: 8, color: S.tmut, fontSize: 13, textAlign: "center" }}>Hostaway search widget</div></div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 32 }}>
+        {["All Regions", "Central Coast", "Sydney", "Melbourne", "Gold Coast", "Adelaide"].map((r, i) => <button key={r} style={{ padding: "7px 16px", fontSize: 12, fontWeight: 700, borderRadius: 8, border: i === 0 ? "none" : `1.5px solid ${S.bdr}`, background: i === 0 ? S.dark : "none", color: i === 0 ? S.cream : S.tsec, cursor: "pointer" }}>{r}</button>)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18 }}>
+        <Card loc="Central Coast · Ravensdale" name="Arroya Valley Farmstay" meta={<><span>5 bed</span><span>3 bath</span><span>10 acres</span></>} />
+        <Card loc="Sydney" name="Harbour Terrace" meta={<><span>3 bed</span><span>2 bath</span></>} />
+        <Card loc="Melbourne" name="Rose Lane Retreat" meta={<><span>2 bed</span><span>1 bath</span></>} />
+        <Card loc="Central Coast" name="Moss Avenue Coastal" meta={<><span>4 bed</span><span>2 bath</span></>} />
+        <Card loc="Gold Coast" name="Broadbeach Suite" meta={<><span>2 bed</span><span>1 bath</span></>} />
+        <Card loc="Adelaide" name="Adelaide Hills House" meta={<><span>3 bed</span><span>2 bath</span></>} />
+      </div>
+    </Sec>
+    <Sec bg="#fff">
+      <div style={{ maxWidth: 560, margin: "0 auto 40px", textAlign: "center" }}><Ey>Beyond the Stay</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>Included with every booking</h2></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
+        <SrvCard icon="🔑" title="Concierge" desc="Airport transfers, restaurant bookings, local guides." />
+        <SrvCard icon="🧹" title="White-glove cleaning" desc="Hotel-standard inspections between every stay." />
+        <SrvCard icon="🛠️" title="24/7 maintenance" desc="On-call team for anything." />
+        <SrvCard icon="📦" title="Stocked essentials" desc="Quality linen, toiletries, kitchen basics." />
+        <SrvCard icon="🏊" title="Experience packages" desc="Surf lessons, wine tours, private chefs." />
+        <SrvCard icon="🐕" title="Pet-friendly" desc="Selected homes welcome pets." />
+      </div>
+    </Sec>
+  </>);
+
+  // ─── ABOUT ───
+  const About = () => (<>
+    <InnerHero eyebrow="Our Story" title="We started with the hardest properties. On purpose." desc="Most STR managers start with city apartments. We started with 10-acre luxury rural estates. Everything else is easy after that." />
+    <Sec bg={S.cream}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 48, alignItems: "center" }}>
+        <div><Ey>The Beginning</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", margin: "8px 0 14px" }}>From a student's suggestion to 20,000+ guests</h2><p style={{ color: S.tsec, lineHeight: 1.75, marginBottom: 10, fontSize: 15 }}>The business started when a former student casually suggested he manage their holiday home. That one property became five. Five became twenty. Today, Super has hosted over 20,000 guests across five Australian cities.</p><p style={{ color: S.tsec, lineHeight: 1.75 }}>Along the way, we built something most property managers don't have: a full-service operational engine powered by technology, run by real people who actually care.</p></div>
+        <div style={{ height: "clamp(260px,30vw,380px)", borderRadius: 12, overflow: "hidden" }}><img src="/img/arroya-lounger.jpg" alt="Arroya Valley" style={{width:"100%",height:"100%",objectFit:"cover"}} /></div>
+      </div>
+    </Sec>
+    <Sec bg="#fff">
+      <div style={{ maxWidth: 560, margin: "0 auto 40px", textAlign: "center" }}><Ey>What We Believe</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>Not a platform. A service.</h2></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
+        {[["Homes, not listings", "Every property has a story. We treat each one like it's our own."], ["Ops-first, always", "Technology is a tool, not the product. Our product is the experience."], ["Real people, real care", "24/7 team. Cleaners who know properties by name. This isn't automated."]].map(([t, d]) => <div key={t} style={{ padding: "24px 20px", borderRadius: 12, border: `1px solid ${S.bdr}`, background: "#fff" }}><h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 5 }}>{t}</h4><p style={{ fontSize: 13, color: S.tsec, lineHeight: 1.6 }}>{d}</p></div>)}
+      </div>
+    </Sec>
+    <Sec bg={S.cream}>
+      <div style={{ maxWidth: 560, marginBottom: 40 }}><Ey>The Team</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>Operators. Builders. Proven at scale.</h2></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 18 }}>
+        {[["Alex", "Founder & Growth Lead", "Founded 3 other 7-figure businesses.", "/img/team-alex.jpg"],
+          ["Michelle", "Ops Lead", "20 years in real estate. Former GM of a 500-property STR portfolio.", "/img/team-michelle.jpg"],
+          ["Tom", "Product Lead", "Raised $200M for Immutable. Former acting Head of Product.", "/img/team-tom.jpg"],
+          ["Andrew Rallings", "Ops Advisor", "Ex-Global Director of Support at Atlassian.", "/img/team-andrew-rallings.png"],
+          ["Andrew Chen", "Tech Lead", "Co-founder & CTO of a 9-figure software business.", "/img/team-andrew-chen.jpg"],
+        ].map(([n, r, d, img]) => (
+          <div key={n} style={{ textAlign: "center" }}>
+            <div style={{ aspectRatio: "1", borderRadius: 12, background: "#ede9e0", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>{img ? <img src={img} alt={n} style={{width:"100%",height:"100%",objectFit:"cover"}} /> : <Ph t="Photo" />}</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{n}</div>
+            <div style={{ fontSize: 12, color: S.coral, fontWeight: 600 }}>{r}</div>
+            <div style={{ fontSize: 11, color: S.tsec, marginTop: 4, lineHeight: 1.4 }}>{d}</div>
+          </div>
+        ))}
+      </div>
+    </Sec>
+  </>);
+
+  // ─── INVEST (with SuperOS integrated) ───
+  const Invest = () => (<>
+    <InnerHero eyeC={S.amber} eyebrow="For Investors" title={<>The STR market is fragmented.<br />We're consolidating it.</>} desc="A $12B+ industry dominated by small operators with no brand, no systems, no scale. Super is building the infrastructure layer." />
+    
+    {/* Metrics */}
+    <div style={{ background: S.dark, paddingBottom: 56 }}>
+      <Wrap>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
+          {[["20,000+", "Guests hosted"], ["5", "Australian cities"], ["M&A", "Rollup strategy active"]].map(([n, l]) => <div key={l} style={{ padding: 24, borderRadius: 12, background: "rgba(250,248,245,.04)", border: "1px solid rgba(250,248,245,.08)" }}><div style={{ fontSize: 32, fontWeight: 800, color: S.gold, letterSpacing: -2 }}>{n}</div><div style={{ fontSize: 12, color: "rgba(196,185,154,.55)", marginTop: 2 }}>{l}</div></div>)}
+        </div>
+      </Wrap>
+    </div>
+
+    {/* Thesis */}
+    <Sec bg={S.cream}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 48, alignItems: "start" }}>
+        <div><Ey>The Opportunity</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", margin: "8px 0 14px" }}>A services-layer play</h2><p style={{ color: S.tsec, lineHeight: 1.75, marginBottom: 10, fontSize: 15 }}>Airbnb built the demand layer. Nobody built the supply layer properly. Super sits between the platforms and the properties.</p><p style={{ color: S.tsec, lineHeight: 1.75 }}>Acquire fragmented portfolios. Integrate into our ops engine. Build the first branded, institutional-grade STR management company in Australia.</p></div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {[["Full-service model", "End-to-end — pricing, vetting, cleaning, maintenance, support, reporting."], ["Technology-augmented", "Hostaway + Breezeway + custom integrations. Data-driven everything."], ["Acquisition pipeline", "Targeting sub-50 property managers. We bring systems, they bring trust."]].map(([t, d]) => <div key={t} style={{ padding: "22px 20px", borderRadius: 12, border: `1px solid ${S.bdr}`, background: "#fff" }}><h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t}</h4><p style={{ fontSize: 13, color: S.tsec, lineHeight: 1.6 }}>{d}</p></div>)}
+        </div>
+      </div>
+    </Sec>
+
+    {/* SuperOS Section */}
+    <Sec bg="#fff">
+      <div style={{ maxWidth: 560, margin: "0 auto 40px", textAlign: "center" }}><Ey c={S.sage}>SuperOS</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>The operating system behind every stay</h2><p style={{ color: S.tsec, fontSize: 15, lineHeight: 1.7, marginTop: 8 }}>Six layers. One system. From the moment a guest discovers a property to the moment they leave a review.</p></div>
+      <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column" }}>
+        {[
+          [S.coral, "Layer 1 · Distribution", "Multi-channel listing engine", "Synced across Airbnb, Booking.com, Stayz, VRBO, and direct — real-time via Hostaway."],
+          [S.amber, "Layer 2 · Revenue", "Dynamic pricing", "Algorithmic pricing adapting to demand, seasonality, events, and competitor rates."],
+          [S.sage, "Layer 3 · Guest Experience", "24/7 comms & support", "Automated messaging + human team for escalations and emergencies."],
+          [S.coral, "Layer 4 · Operations", "Task orchestration", "Every changeover and maintenance job via Breezeway with checklists and photo verification."],
+          [S.amber, "Layer 5 · Quality", "White-glove inspections", "Post-clean inspections with photo documentation. Our competitive moat."],
+          [S.sage, "Layer 6 · Intelligence", "Data & reporting", "Owner dashboards, cleaner scoring, review analysis, cost-per-turn tracking."],
+        ].map(([c, tag, t, d], i) => (
+          <div key={i} style={{ padding: "20px 24px", border: `1px solid ${S.bdr}`, background: "#fff", borderRadius: i === 0 ? "12px 12px 0 0" : i === 5 ? "0 0 12px 12px" : 0, borderTop: i > 0 ? "none" : undefined }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: c, marginBottom: 3 }}>{tag}</div>
+            <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>{t}</h4>
+            <p style={{ fontSize: 13, color: S.tsec, lineHeight: 1.5 }}>{d}</p>
+          </div>
+        ))}
+      </div>
+    </Sec>
+
+    {/* Integrations */}
+    <Sec bg={S.cream}>
+      <div style={{ maxWidth: 560, margin: "0 auto 36px", textAlign: "center" }}><Ey c={S.sage}>Integrations</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", marginTop: 8 }}>Connected by design</h2></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+        {[["🏠", "Hostaway", "PMS, channels, financials"], ["🧹", "Breezeway", "Tasks, inspections"], ["💰", "PriceLabs", "Dynamic pricing"], ["💬", "Slack", "Ops coordination"], ["🔐", "Smart Locks", "Remote access"], ["📊", "Dashboards", "Owner reporting"], ["📧", "Auto Comms", "Guest messaging"], ["🤖", "Jarvis (AI)", "Unified inbox, triage"]].map(([ic, t, d]) => (
+          <div key={t} style={{ padding: "16px 14px", borderRadius: 10, border: `1px solid ${S.bdr}`, background: "#fff", textAlign: "center" }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>{ic}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{t}</div>
+            <div style={{ fontSize: 10, color: S.tmut, lineHeight: 1.4 }}>{d}</div>
+          </div>
+        ))}
+      </div>
+    </Sec>
+
+    {/* Arroya case study */}
+    <Sec bg="#fff">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 48, alignItems: "center" }}>
+        <div><Ey c={S.sage}>Case Study</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", margin: "8px 0 14px" }}>Arroya Valley Farmstay</h2><p style={{ color: S.tsec, lineHeight: 1.75, marginBottom: 10, fontSize: 15 }}>100-hectare private valley on the Central Coast. Three homes and a cottage. The property that proved Super could manage anything.</p><p style={{ color: S.tsec, lineHeight: 1.75, marginBottom: 20 }}>SuperOS handles synced calendars, automated changeovers across multiple buildings, White Glove inspections, and real-time owner visibility.</p><Btn v="dark" onClick={() => window.open("https://arroya-farm.webflow.io/", "_blank")}>View Arroya listing</Btn></div>
+        <div style={{ height: "clamp(260px,30vw,380px)", borderRadius: 12, overflow: "hidden" }}><img src="/img/arroya-pool-house.jpg" alt="Arroya Valley" style={{width:"100%",height:"100%",objectFit:"cover"}} /></div>
+      </div>
+    </Sec>
+
+    {/* CTA */}
+    <Sec bg={S.dark} style={{ textAlign: "center" }}>
+      <h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", color: S.cream, marginBottom: 12 }}>Interested?</h2>
+      <p style={{ color: S.gold, maxWidth: 400, margin: "0 auto 24px", fontSize: 15, lineHeight: 1.7, opacity: .8 }}>We're selectively raising for our next phase of growth.</p>
+      <Btn v="coral" onClick={() => window.open("mailto:hello@superhostly.com.au")}>Get in touch</Btn>
+    </Sec>
+  </>);
+
+  // ─── PARTNERS ───
+  const Partners = () => (<>
+    <InnerHero eyebrow="Partnerships" title="We're only as good as the people behind the doors." desc="Super is growing and we're looking for exceptional people to join our contractor network." />
+    <Sec bg={S.cream}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
+        {[["Cleaning", "Professional Cleaners", "Changeover and deep-clean specialists.", "Central Coast · Sydney · Melbourne · Gold Coast · Adelaide"], ["Maintenance", "Handymen & Trades", "Plumbing, electrical, general repairs, pool maintenance.", "Central Coast · Sydney · Melbourne"], ["Inspections", "White Glove Inspectors", "Post-clean QA. Last eyes before a guest walks in.", "Central Coast · Sydney"]].map(([cat, t, d, reg]) => (
+          <div key={t} style={{ padding: "24px 20px", borderRadius: 12, border: `1px solid ${S.bdr}`, background: "#fff" }}>
+            <Ey>{cat}</Ey>
+            <h4 style={{ fontSize: 16, fontWeight: 700, marginTop: 8, marginBottom: 5 }}>{t}</h4>
+            <p style={{ fontSize: 13, color: S.tsec, lineHeight: 1.6 }}>{d}</p>
+            <p style={{ fontSize: 11, color: S.tmut, marginTop: 10, fontWeight: 600 }}>Hiring: {reg}</p>
+          </div>
+        ))}
+      </div>
+    </Sec>
+    <Sec bg="#fff">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 48, alignItems: "center" }}>
+        <div><Ey>Why Super</Ey><h2 style={{ fontWeight: 800, fontSize: "clamp(24px,3.5vw,42px)", letterSpacing: "-.03em", margin: "8px 0 14px" }}>Consistent work. Fair pay. Real respect.</h2><p style={{ color: S.tsec, lineHeight: 1.75, marginBottom: 20 }}>A growing portfolio means regular, reliable work. Clear task briefs via Breezeway. Fair and prompt payment.</p><Btn v="coral" onClick={() => window.open("mailto:hello@superhostly.com.au")}>Apply to partner</Btn></div>
+        <div style={{ height: "clamp(260px,30vw,380px)", borderRadius: 12, overflow: "hidden", position: "relative", cursor: "pointer", background: "#ede9e0" }} onClick={() => window.open("https://www.youtube.com", "_blank")}>
+          <img src="/img/team.png" alt="Super team" style={{width:"100%",height:"100%",objectFit:"cover"}} />
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(26,26,24,.3)" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(250,248,245,.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 0, height: 0, borderLeft: "22px solid #1A1A18", borderTop: "13px solid transparent", borderBottom: "13px solid transparent", marginLeft: 4 }} />
+            </div>
+          </div>
+          <div style={{ position: "absolute", bottom: 16, left: 16, fontSize: 12, fontWeight: 600, color: "#fff" }}>Watch: What it's like to work with Super</div>
+        </div>
+      </div>
+    </Sec>
+  </>);
+
+  const pages = { home: Home, homes: Homes, about: About, invest: Invest, partners: Partners };
+  const Page = pages[page] || Home;
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        @media(max-width:900px) {
+          .desk-nav { display: none !important; }
+          .mob-toggle { display: flex !important; }
+        }
+        @media(min-width:901px) {
+          .mob-toggle { display: none !important; }
+        }
+        ::-webkit-scrollbar { width: 0; height: 0; }
+        * { scrollbar-width: none; }
+      `}</style>
+      <div style={{ fontFamily: "'Plus Jakarta Sans',-apple-system,sans-serif", color: "#1A1A18", background: "#FAF8F5", fontSize: 16, lineHeight: 1.6, WebkitFontSmoothing: "antialiased", overflowX: "hidden" }}>
+        <Nav />
+        <div style={{ opacity: fading ? 0 : 1, transform: fading ? "translateY(8px)" : "translateY(0)", transition: "opacity .25s ease, transform .25s ease" }}>
+          <Page />
+        </div>
+        <Footer />
+      </div>
+    </>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
